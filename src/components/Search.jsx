@@ -1,4 +1,3 @@
-import React from "react";
 import search from "../assets/search.svg"
 
 const Search = ({ searchTerm, setSearchTerm }) => {
