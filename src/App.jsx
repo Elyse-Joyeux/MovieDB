@@ -23,6 +23,7 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [trendingMovies, setTrendingMovies] = useState('')
   const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
 
   //Debounce the search term to prevent making too many API requests
@@ -61,9 +62,25 @@ const App = () => {
     }
   };
 
+  const loadTrendingMovies = async()=>{
+    try{
+      const movies = await getTrendingMovies()
+      setTrendingMovies(movies)
+
+    } catch(err){
+      console.error(`Error fetching trending movies: ${err}`)
+      
+    }
+  }
+
+
   useEffect(() => {
     fetchMovies(debounceSearchTerm);
   }, [debounceSearchTerm]);
+
+  useEffect(()=>{
+    loadTrendingMovies()
+  },[])
 
   return (
     <div className="pattern">
@@ -76,8 +93,22 @@ const App = () => {
           </h1>
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
+
+        {trendingMovies.length > 0 && (
+          <section className="trending">
+            <h2>Trending Movieis</h2>
+            <ul>
+              {trendingMovies.map((movie, index)=>(
+                <li key={movie.$id}>
+                  <p>{index + 1}</p>
+                  <img src={movie.poster_url} alt={movie.title} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
         <section className="all-movies">
-          <h2 className="mt-[40px]">All movies</h2>
+          <h2>All movies</h2>
           {isLoading ? (
             <Spinner />
           ) : errorMessage ? (
