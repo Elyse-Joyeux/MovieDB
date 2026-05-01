@@ -190,6 +190,10 @@ const App = () => {
             </ul>
           )}
         </section>
+
+        <footer className="site-footer">
+          <p>Copyright © {new Date().getFullYear()} Author - Elyse Joyeux</p>
+        </footer>
       </div>
 
       {selectedMovie && (
