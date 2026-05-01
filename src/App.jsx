@@ -4,7 +4,7 @@ import Search from './components/Search.jsx'
 import heroBackground from './assets/hero-background.png'
 
 const App = () => {
-const [searchTerm, setSearchTerm] =useState("")
+const [searchTerm, setSearchTerm] =useState('')
 
   return (
     <div className="pattern">
@@ -15,7 +15,7 @@ const [searchTerm, setSearchTerm] =useState("")
         </header>
 
         <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm}/>
-
+        <h1>{searchTerm}</h1>
       </div>
     </div>
   )
