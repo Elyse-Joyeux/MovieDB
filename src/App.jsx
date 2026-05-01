@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Search from "./components/Search.jsx";
 import heroBackground from "./assets/hero-background.png";
 import Spinner from "./components/Spinner.jsx";
@@ -34,7 +34,18 @@ const App = () => {
   //by waiting the user to stop typing for 500ms
   useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
-  const fetchMovies = async (query = "") => {
+  const loadTrendingMovies = useCallback(async()=>{
+    try{
+      const movies = await getTrendingMovies()
+      setTrendingMovies(movies)
+
+    } catch(err){
+      console.error(`Error fetching trending movies: ${err}`)
+
+    }
+  }, [])
+
+  const fetchMovies = useCallback(async (query = "") => {
     setIsLoading(true);
     setErrorMessage("");
 
@@ -55,7 +66,8 @@ const App = () => {
 
       setMovieList(data.results || []);
       if(query && data.results.length > 0){
-        await updateSearchCount(query, data.results[0])
+        const didUpdateTrending = await updateSearchCount(query, data.results[0])
+        if (didUpdateTrending) await loadTrendingMovies()
       }
 
     } catch (error) {
@@ -64,18 +76,7 @@ const App = () => {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const loadTrendingMovies = async()=>{
-    try{
-      const movies = await getTrendingMovies()
-      setTrendingMovies(movies)
-
-    } catch(err){
-      console.error(`Error fetching trending movies: ${err}`)
-      
-    }
-  }
+  }, [loadTrendingMovies]);
 
   const handleSelectMovie = async (movie) => {
     setSelectedMovie(movie);
@@ -107,16 +108,16 @@ const App = () => {
 
 
   useEffect(() => {
-    // Fetching movies belongs here because it syncs the list with the debounced search term.
+    // Fetch movies whenever the debounced search value changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMovies(debounceSearchTerm);
-  }, [debounceSearchTerm]);
+  }, [debounceSearchTerm, fetchMovies]);
 
   useEffect(()=>{
-    // Load the persisted trending searches once when the app starts.
+    // Load persisted trending movies once when the app starts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     loadTrendingMovies()
-  },[])
+  },[loadTrendingMovies])
 
   useEffect(() => {
     const handleEscape = (event) => {
