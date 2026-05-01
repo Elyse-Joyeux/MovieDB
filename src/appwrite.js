@@ -17,14 +17,30 @@ export const updateSearchCount = async (searchTerm, movie) => {
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
       Query.equal("movie_id", movie.id.toString()),
+      Query.limit(100),
     ]);
 
     //2. if it does, update the count
     if (result.documents.length > 0) {
-      const doc = result.documents[0];
+      const [doc, ...duplicateDocs] = result.documents;
+      const duplicateCount = duplicateDocs.reduce(
+        (total, duplicateDoc) => total + duplicateDoc.count,
+        0,
+      );
+
       await database.updateDocument(DATABASE_ID, COLLECTION_ID, doc.$id, {
-        count: doc.count + 1,
+        count: doc.count + duplicateCount + 1,
+        searchTerm,
+        title: movie.title,
+        poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
       });
+
+      await Promise.allSettled(
+        duplicateDocs.map((duplicateDoc) =>
+          database.deleteDocument(DATABASE_ID, COLLECTION_ID, duplicateDoc.$id),
+        ),
+      );
+
       return true;
 
       //3. if it doesn't, create a new document with the search term and count as 1
@@ -46,10 +62,31 @@ export const updateSearchCount = async (searchTerm, movie) => {
 export const getTrendingMovies = async () => {
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.limit(5),
+      Query.limit(100),
       Query.orderDesc("count"),
     ]);
-    return result.documents;
+
+    const uniqueMovies = result.documents.reduce((movies, movie) => {
+      const movieId = movie.movie_id?.toString();
+      if (!movieId) return movies;
+
+      const existingMovie = movies.get(movieId);
+
+      if (existingMovie) {
+        movies.set(movieId, {
+          ...existingMovie,
+          count: existingMovie.count + movie.count,
+        });
+        return movies;
+      }
+
+      movies.set(movieId, movie);
+      return movies;
+    }, new Map());
+
+    return Array.from(uniqueMovies.values())
+      .sort((firstMovie, secondMovie) => secondMovie.count - firstMovie.count)
+      .slice(0, 5);
   } catch (err) {
     console.error(err);
     return [];
