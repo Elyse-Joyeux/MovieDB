@@ -4,10 +4,9 @@ import heroBackground from "./assets/hero-background.png";
 import Spinner from "./components/Spinner.jsx";
 import MovieCard from "./components/MovieCard.jsx";
 import { useDebounce } from "react-use";
-import { updateSearchCount, getTrendingMovies } from './appwrite.js'
+import { updateSearchCount, getTrendingMovies } from "./appwrite.js";
 import poster from "./assets/poster-not-found.png";
 import star from "./assets/star.svg";
-
 
 const API_BASE_URL = "https://api.themoviedb.org/3";
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
@@ -24,7 +23,7 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [trendingMovies, setTrendingMovies] = useState([])
+  const [trendingMovies, setTrendingMovies] = useState([]);
   const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
   const [selectedMovie, setSelectedMovie] = useState(null);
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
@@ -34,49 +33,49 @@ const App = () => {
   //by waiting the user to stop typing for 500ms
   useDebounce(() => setDebounceSearchTerm(searchTerm), 500, [searchTerm]);
 
-  const loadTrendingMovies = useCallback(async()=>{
-    try{
-      const movies = await getTrendingMovies()
-      setTrendingMovies(movies)
-
-    } catch(err){
-      console.error(`Error fetching trending movies: ${err}`)
-
-    }
-  }, [])
-
-  const fetchMovies = useCallback(async (query = "") => {
-    setIsLoading(true);
-    setErrorMessage("");
-
+  const loadTrendingMovies = useCallback(async () => {
     try {
-      const endpoint = query
-        ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
-        : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
-      const response = await fetch(endpoint, API_OPTIONS);
-
-      if (!response.ok) throw new Error("Failed to fetch movies");
-
-      const data = await response.json();
-      if (data.Response == "False") {
-        setErrorMessage(data.Error || "Failed to fetch movies");
-        setMovieList([]);
-        return;
-      }
-
-      setMovieList(data.results || []);
-      if(query && data.results.length > 0){
-        const didUpdateTrending = await updateSearchCount(query, data.results[0])
-        if (didUpdateTrending) await loadTrendingMovies()
-      }
-
-    } catch (error) {
-      console.error(`Error fetching movies: ${error}`);
-      setErrorMessage("Error fetching movies, Please try again later");
-    } finally {
-      setIsLoading(false);
+      const movies = await getTrendingMovies();
+      setTrendingMovies(movies);
+    } catch (err) {
+      console.error(`Error fetching trending movies: ${err}`);
     }
-  }, [loadTrendingMovies]);
+  }, []);
+
+  const fetchMovies = useCallback(
+    async (query = "") => {
+      setIsLoading(true);
+      setErrorMessage("");
+
+      try {
+        const endpoint = query
+          ? `${API_BASE_URL}/search/movie?query=${encodeURIComponent(query)}`
+          : `${API_BASE_URL}/discover/movie?sort_by=popularity.desc`;
+        const response = await fetch(endpoint, API_OPTIONS);
+
+        if (!response.ok) throw new Error("Failed to fetch movies");
+
+        const data = await response.json();
+        if (data.Response == "False") {
+          setErrorMessage(data.Error || "Failed to fetch movies");
+          setMovieList([]);
+          return;
+        }
+
+        setMovieList(data.results || []);
+        if (query && data.results.length > 0) {
+          await updateSearchCount(query, data.results[0]);
+          await loadTrendingMovies();
+        }
+      } catch (error) {
+        console.error(`Error fetching movies: ${error}`);
+        setErrorMessage("Error fetching movies, Please try again later");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [loadTrendingMovies],
+  );
 
   const handleSelectMovie = async (movie) => {
     setSelectedMovie(movie);
@@ -86,7 +85,7 @@ const App = () => {
     try {
       const response = await fetch(
         `${API_BASE_URL}/movie/${movie.id}?append_to_response=credits`,
-        API_OPTIONS
+        API_OPTIONS,
       );
 
       if (!response.ok) throw new Error("Failed to fetch movie details");
@@ -106,18 +105,17 @@ const App = () => {
     setDetailsError("");
   };
 
-
   useEffect(() => {
     // Fetch movies whenever the debounced search value changes.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     fetchMovies(debounceSearchTerm);
   }, [debounceSearchTerm, fetchMovies]);
 
-  useEffect(()=>{
+  useEffect(() => {
     // Load persisted trending movies once when the app starts.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    loadTrendingMovies()
-  },[loadTrendingMovies])
+    loadTrendingMovies();
+  }, [loadTrendingMovies]);
 
   useEffect(() => {
     const handleEscape = (event) => {
@@ -126,7 +124,7 @@ const App = () => {
 
     window.addEventListener("keydown", handleEscape);
     return () => window.removeEventListener("keydown", handleEscape);
-  }, [])
+  }, []);
 
   const selectedMoviePoster = selectedMovie?.poster_path
     ? `https://image.tmdb.org/t/p/w500/${selectedMovie.poster_path}`
@@ -164,10 +162,13 @@ const App = () => {
           <section className="trending">
             <h2>Trending Movies</h2>
             <ul>
-              {trendingMovies.map((movie, index)=>(
+              {trendingMovies.map((movie, index) => (
                 <li key={movie.$id}>
                   <p>{index + 1}</p>
-                  <img src={movie.poster_url} alt={movie.title || movie.searchTerm} />
+                  <img
+                    src={movie.poster_url}
+                    alt={movie.title || movie.searchTerm}
+                  />
                 </li>
               ))}
             </ul>
@@ -244,11 +245,14 @@ const App = () => {
                 <span>{selectedMovie.vote_count || 0} votes</span>
               </div>
 
-              {isDetailsLoading && <p className="details-note">Loading more details...</p>}
+              {isDetailsLoading && (
+                <p className="details-note">Loading more details...</p>
+              )}
               {detailsError && <p className="details-error">{detailsError}</p>}
 
               <p className="details-overview">
-                {selectedMovie.overview || "No overview available for this movie."}
+                {selectedMovie.overview ||
+                  "No overview available for this movie."}
               </p>
 
               <div className="details-grid">

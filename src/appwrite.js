@@ -16,7 +16,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
   //1. Use appwrite SDK to check if the movie already exists in database
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal("movie_id", movie.id),
+      Query.equal("movie_id", movie.id.toString()),
     ]);
 
     //2. if it does, update the count
@@ -32,7 +32,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
         searchTerm,
         count: 1,
-        movie_id: movie.id,
+        movie_id: movie.id.toString(),
         title: movie.title,
         poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
       });
@@ -43,36 +43,15 @@ export const updateSearchCount = async (searchTerm, movie) => {
     return false;
   }
 };
-
-export const getTrendingMovies = async ()=>{
-    try{
-        const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID,[
-            Query.limit(25),
-            Query.orderDesc("count")
-        ] )
-
-        const uniqueMovies = result.documents.reduce((movies, movie) => {
-            const existingMovie = movies.get(movie.movie_id)
-
-            if(existingMovie){
-                movies.set(movie.movie_id, {
-                    ...existingMovie,
-                    count: existingMovie.count + movie.count
-                })
-                return movies
-            }
-
-            movies.set(movie.movie_id, movie)
-            return movies
-        }, new Map())
-
-        return Array.from(uniqueMovies.values())
-            .sort((firstMovie, secondMovie)=> secondMovie.count - firstMovie.count)
-            .slice(0, 5)
-
-    } catch(err){
-        console.error(err)
-        return []
-    } 
-
-}
+export const getTrendingMovies = async () => {
+  try {
+    const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
+      Query.limit(5),
+      Query.orderDesc("count"),
+    ]);
+    return result.documents;
+  } catch (err) {
+    console.error(err);
+    return [];
+  }
+};
