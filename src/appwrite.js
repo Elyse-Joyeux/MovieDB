@@ -25,6 +25,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
       await database.updateDocument(DATABASE_ID, COLLECTION_ID, doc.$id, {
         count: doc.count + 1,
       });
+      return true;
 
       //3. if it doesn't, create a new document with the search term and count as 1
     } else {
@@ -35,9 +36,11 @@ export const updateSearchCount = async (searchTerm, movie) => {
         title: movie.title,
         poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
       });
+      return true;
     }
   } catch (err) {
     console.error(err);
+    return false;
   }
 };
 
@@ -69,6 +72,7 @@ export const getTrendingMovies = async ()=>{
 
     } catch(err){
         console.error(err)
+        return []
     } 
 
 }
