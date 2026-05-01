@@ -56,13 +56,13 @@ const App = () => {
         if (!response.ok) throw new Error("Failed to fetch movies");
 
         const data = await response.json();
-        if (data.Response == "False") {
-          setErrorMessage(data.Error || "Failed to fetch movies");
+
+        setMovieList(data.results || []);
+        if (query && data.results.length === 0) {
+          setErrorMessage("No movies found for that search term.");
           setMovieList([]);
           return;
         }
-
-        setMovieList(data.results || []);
         if (query && data.results.length > 0) {
           await updateSearchCount(query, data.results[0]);
           await loadTrendingMovies();
