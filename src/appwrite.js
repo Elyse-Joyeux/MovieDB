@@ -13,10 +13,10 @@ const database = new Databases(client);
 //this function will save poster cards, movies in their places in database
 //such that it will be much more easier to track it other times
 export const updateSearchCount = async (searchTerm, movie) => {
-  //1. Use appwrite SDK to check if the search term exists in databasse
+  //1. Use appwrite SDK to check if the movie already exists in database
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal("searchTerm", searchTerm),
+      Query.equal("movie_id", movie.id),
     ]);
 
     //2. if it does, update the count
@@ -26,12 +26,13 @@ export const updateSearchCount = async (searchTerm, movie) => {
         count: doc.count + 1,
       });
 
-      //3. if it doesn't, create a new document with teh seaarch term and count as 1
+      //3. if it doesn't, create a new document with the search term and count as 1
     } else {
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
         searchTerm,
         count: 1,
         movie_id: movie.id,
+        title: movie.title,
         poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
       });
     }
@@ -43,11 +44,28 @@ export const updateSearchCount = async (searchTerm, movie) => {
 export const getTrendingMovies = async ()=>{
     try{
         const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID,[
-            Query.limit(5),
+            Query.limit(25),
             Query.orderDesc("count")
         ] )
 
-        return result.documents
+        const uniqueMovies = result.documents.reduce((movies, movie) => {
+            const existingMovie = movies.get(movie.movie_id)
+
+            if(existingMovie){
+                movies.set(movie.movie_id, {
+                    ...existingMovie,
+                    count: existingMovie.count + movie.count
+                })
+                return movies
+            }
+
+            movies.set(movie.movie_id, movie)
+            return movies
+        }, new Map())
+
+        return Array.from(uniqueMovies.values())
+            .sort((firstMovie, secondMovie)=> secondMovie.count - firstMovie.count)
+            .slice(0, 5)
 
     } catch(err){
         console.error(err)
