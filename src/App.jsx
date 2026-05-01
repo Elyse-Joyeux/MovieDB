@@ -23,7 +23,7 @@ const App = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [movieList, setMovieList] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
-  const [trendingMovies, setTrendingMovies] = useState('')
+  const [trendingMovies, setTrendingMovies] = useState([])
   const [debounceSearchTerm, setDebounceSearchTerm] = useState("");
 
   //Debounce the search term to prevent making too many API requests
@@ -96,7 +96,7 @@ const App = () => {
 
         {trendingMovies.length > 0 && (
           <section className="trending">
-            <h2>Trending Movieis</h2>
+            <h2>Trending Movies</h2>
             <ul>
               {trendingMovies.map((movie, index)=>(
                 <li key={movie.$id}>
@@ -121,8 +121,6 @@ const App = () => {
             </ul>
           )}
         </section>
-
-        <h1>{searchTerm}</h1>
       </div>
     </div>
   );
