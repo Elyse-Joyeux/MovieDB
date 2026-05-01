@@ -1,12 +1,20 @@
-import React from "react";
 import poster from "../assets/poster-not-found.png";
 import star from "../assets/star.svg";
 
 const MovieCard = ({
-  movie: { title, vote_average, poster_path, original_language, release_date },
+  movie,
+  onSelectMovie,
 }) => {
+  const { title, vote_average, poster_path, original_language, release_date } =
+    movie;
+
   return (
-    <div className="movie-card">
+    <button
+      className="movie-card"
+      type="button"
+      onClick={() => onSelectMovie(movie)}
+      aria-label={`View details for ${title}`}
+    >
       <img
         src={
           poster_path
@@ -32,7 +40,7 @@ const MovieCard = ({
           </p>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
