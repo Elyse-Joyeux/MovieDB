@@ -3,7 +3,7 @@ import poster from "../assets/poster-not-found.png";
 import star from "../assets/star.svg";
 
 const MovieCard = ({
-  movie: { title, vote_average, poster_path, original_language },
+  movie: { title, vote_average, poster_path, original_language, release_date },
 }) => {
   return (
     <div className="movie-card">
