@@ -16,7 +16,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
   //1. Use appwrite SDK to check if the movie already exists in database
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal("movie_id", movie.id.toString()),
+      Query.equal("movie_id", movie.id),
       Query.limit(100),
     ]);
 
@@ -48,14 +48,14 @@ export const updateSearchCount = async (searchTerm, movie) => {
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
         searchTerm,
         count: 1,
-        movie_id: movie.id.toString(),
+        movie_id: movie.id,
         title: movie.title,
         poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
       });
       return true;
     }
   } catch (err) {
-    console.error(err);
+    console.error("Error updating search count:", err);
     return false;
   }
 };
@@ -66,9 +66,14 @@ export const getTrendingMovies = async () => {
       Query.orderDesc("count"),
     ]);
 
+    console.log("Raw documents from Appwrite:", result.documents);
+
     const uniqueMovies = result.documents.reduce((movies, movie) => {
-      const movieId = movie.movie_id?.toString();
-      if (!movieId) return movies;
+      const movieId = movie.movie_id;
+      if (!movieId) {
+        console.warn("Movie without movie_id:", movie);
+        return movies;
+      }
 
       const existingMovie = movies.get(movieId);
 
@@ -84,11 +89,14 @@ export const getTrendingMovies = async () => {
       return movies;
     }, new Map());
 
-    return Array.from(uniqueMovies.values())
+    const trendingArray = Array.from(uniqueMovies.values())
       .sort((firstMovie, secondMovie) => secondMovie.count - firstMovie.count)
       .slice(0, 5);
+    
+    console.log("Processed trending movies:", trendingArray);
+    return trendingArray;
   } catch (err) {
-    console.error(err);
+    console.error("Error fetching trending movies:", err);
     return [];
   }
 };
