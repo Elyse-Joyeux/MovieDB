@@ -10,6 +10,7 @@ const client = new Client()
 
 const database = new Databases(client);
 
+// Returns a valid poster URL or a placeholder if the path is missing
 const getPosterUrl = (posterPath) => {
   if (!posterPath || posterPath === "null") {
     return "https://placehold.co/500x750?text=No+Poster";
@@ -17,6 +18,7 @@ const getPosterUrl = (posterPath) => {
   return `https://image.tmdb.org/t/p/w500${posterPath}`;
 };
 
+// Updates the search count for a movie, or creates a new entry if it doesn't exist
 export const updateSearchCount = async (searchTerm, movie) => {
   try {
     const movieId = Number(movie.id);
@@ -46,6 +48,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
         )
       );
     } else {
+      // Create a new document for this movie
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
         searchTerm,
         count: 1,
@@ -61,6 +64,7 @@ export const updateSearchCount = async (searchTerm, movie) => {
   }
 };
 
+// Fetches the top 5 trending movies ordered by search count
 export const getTrendingMovies = async () => {
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
