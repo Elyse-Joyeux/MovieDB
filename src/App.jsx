@@ -36,6 +36,7 @@ const App = () => {
   const loadTrendingMovies = useCallback(async () => {
     try {
       const movies = await getTrendingMovies();
+      console.log("Setting trending movies:", movies);
       setTrendingMovies(movies);
     } catch (err) {
       console.error(`Error fetching trending movies: ${err}`);
@@ -65,6 +66,8 @@ const App = () => {
         }
         if (query && data.results.length > 0) {
           await updateSearchCount(query, data.results[0]);
+          // Auto-update trending movies after search
+          await new Promise(resolve => setTimeout(resolve, 500));
           await loadTrendingMovies();
         }
       } catch (error) {
@@ -158,22 +161,25 @@ const App = () => {
           <Search searchTerm={searchTerm} setSearchTerm={setSearchTerm} />
         </header>
 
-        {trendingMovies.length > 0 && (
-          <section className="trending">
-            <h2>Trending Movies</h2>
+        <section className="trending">
+          <h2>Trending Movies</h2>
+          {trendingMovies.length > 0 ? (
             <ul>
               {trendingMovies.map((movie, index) => (
                 <li key={movie.$id}>
                   <p>{index + 1}</p>
                   <img
-                    src={movie.poster_url}
+                    src={movie.poster_url && !movie.poster_url.includes('null') ? movie.poster_url : poster}
                     alt={movie.title || movie.searchTerm}
+                    onError={(e) => { e.target.src = poster; }}
                   />
                 </li>
               ))}
             </ul>
-          </section>
-        )}
+          ) : (
+            <p>No trending movies yet. Search for some movies to see trending.</p>
+          )}
+        </section>
         <section className="all-movies">
           <h2>All movies</h2>
           {isLoading ? (
@@ -182,7 +188,9 @@ const App = () => {
             <p className="text-red-500">{errorMessage}</p>
           ) : (
             <ul>
-              {movieList.map((movie) => (
+              {movieList
+                .filter(movie => !trendingMovies.some(trending => trending.movie_id === movie.id))
+                .map((movie) => (
                 <MovieCard
                   key={movie.id}
                   movie={movie}
