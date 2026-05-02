@@ -10,55 +10,57 @@ const client = new Client()
 
 const database = new Databases(client);
 
-//this function will save poster cards, movies in their places in database
-//such that it will be much more easier to track it other times
+const getPosterUrl = (posterPath) => {
+  if (!posterPath || posterPath === "null") {
+    return "https://placehold.co/500x750?text=No+Poster";
+  }
+  return `https://image.tmdb.org/t/p/w500${posterPath}`;
+};
+
 export const updateSearchCount = async (searchTerm, movie) => {
-  //1. Use appwrite SDK to check if the movie already exists in database
   try {
+    const movieId = Number(movie.id);
+    const posterUrl = getPosterUrl(movie.poster_path);
+
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
-      Query.equal("movie_id", movie.id),
+      Query.equal("movie_id", movieId),
       Query.limit(100),
     ]);
 
-    //2. if it does, update the count
     if (result.documents.length > 0) {
       const [doc, ...duplicateDocs] = result.documents;
       const duplicateCount = duplicateDocs.reduce(
-        (total, duplicateDoc) => total + duplicateDoc.count,
-        0,
+        (total, d) => total + (d.count || 0), 0
       );
 
       await database.updateDocument(DATABASE_ID, COLLECTION_ID, doc.$id, {
-        count: doc.count + duplicateCount + 1,
+        count: (doc.count || 0) + duplicateCount + 1,
         searchTerm,
         title: movie.title,
-        poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+        poster_url: posterUrl,
       });
 
       await Promise.allSettled(
-        duplicateDocs.map((duplicateDoc) =>
-          database.deleteDocument(DATABASE_ID, COLLECTION_ID, duplicateDoc.$id),
-        ),
+        duplicateDocs.map(d =>
+          database.deleteDocument(DATABASE_ID, COLLECTION_ID, d.$id)
+        )
       );
-
-      return true;
-
-      //3. if it doesn't, create a new document with the search term and count as 1
     } else {
       await database.createDocument(DATABASE_ID, COLLECTION_ID, ID.unique(), {
         searchTerm,
         count: 1,
-        movie_id: movie.id,
+        movie_id: movieId,
         title: movie.title,
-        poster_url: `https://image.tmdb.org/t/p/w500${movie.poster_path}`,
+        poster_url: posterUrl,
       });
-      return true;
     }
+    return true;
   } catch (err) {
-    console.error("Error updating search count:", err);
+    console.error("Error updating search count:", JSON.stringify(err));
     return false;
   }
 };
+
 export const getTrendingMovies = async () => {
   try {
     const result = await database.listDocuments(DATABASE_ID, COLLECTION_ID, [
@@ -66,17 +68,11 @@ export const getTrendingMovies = async () => {
       Query.orderDesc("count"),
     ]);
 
-    console.log("Raw documents from Appwrite:", result.documents);
-
     const uniqueMovies = result.documents.reduce((movies, movie) => {
       const movieId = movie.movie_id;
-      if (!movieId) {
-        console.warn("Movie without movie_id:", movie);
-        return movies;
-      }
+      if (!movieId) return movies;
 
       const existingMovie = movies.get(movieId);
-
       if (existingMovie) {
         movies.set(movieId, {
           ...existingMovie,
@@ -89,14 +85,12 @@ export const getTrendingMovies = async () => {
       return movies;
     }, new Map());
 
-    const trendingArray = Array.from(uniqueMovies.values())
-      .sort((firstMovie, secondMovie) => secondMovie.count - firstMovie.count)
+    return Array.from(uniqueMovies.values())
+      .sort((a, b) => b.count - a.count)
       .slice(0, 5);
-    
-    console.log("Processed trending movies:", trendingArray);
-    return trendingArray;
+
   } catch (err) {
-    console.error("Error fetching trending movies:", err);
+    console.error("Error fetching trending movies:", JSON.stringify(err));
     return [];
   }
 };
