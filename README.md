@@ -38,7 +38,7 @@ Go to Settings → API → copy your Bearer Token (API Read Access Token)
 Appwrite:
 
 Create a free project at appwrite.io
-Create a database and a collection called metrics
+Create a database and a collection (e.g: metrics)
 Add the following attributes to the collection:
 
 AttributeTypeRequiredsearchTermString (1000)✅countInteger✅poster_urlURL✅movie_idInteger✅titleString (500)✅
